@@ -2,10 +2,10 @@
 Template Component main class.
 
 """
-import csv
+#import csv
 import logging
 import requests
-from datetime import datetime
+#from datetime import datetime
 import json
 import time
 
