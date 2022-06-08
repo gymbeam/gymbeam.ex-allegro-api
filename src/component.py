@@ -47,13 +47,13 @@ class Component(ComponentBase):
         params = self.configuration.parameters
         # Access parameters in data/config.json
         if params.get(KEY_CLIENT_ID):
-            logging.info(1)
+            logging.info("1")
 
         if params.get(KEY_CLIENT_SECRET):
-            logging.info(2)
+            logging.info("1")
 
         if params.get(KEY_FIRST_RUN):
-            logging.info(3)
+            logging.info("1")
 
         # get last state data/in/state.json from previous run
         previous_state = self.get_state_file()
