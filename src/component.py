@@ -47,8 +47,8 @@ class Component(ComponentBase):
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
         params = self.configuration.parameters
         logging.info({
-            "key": params.get(KEY_CLIENT_ID), 
-            "secret": params.get(KEY_CLIENT_SECRET), 
+            "key": params.get(KEY_CLIENT_ID),
+            "secret": params.get(KEY_CLIENT_SECRET),
             'first_run': params.get(KEY_FIRST_RUN)})
         logging.info(params)
         # Access parameters in data/config.json
