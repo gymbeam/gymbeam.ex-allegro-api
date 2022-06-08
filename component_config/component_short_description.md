@@ -1,0 +1,1 @@
+Allegro API extractor
