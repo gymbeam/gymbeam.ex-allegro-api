@@ -4,7 +4,10 @@ Template Component main class.
 """
 import csv
 import logging
+import requests
 from datetime import datetime
+import json
+import time
 
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
@@ -14,6 +17,9 @@ KEY_API_TOKEN = '#api_token'
 KEY_CLIENT_ID = '#client_id'
 KEY_CLIENT_SECRET = '#client_secret'
 KEY_FIRST_RUN = 'first_run'
+
+CODE_URL = "https://allegro.pl/auth/oauth/device"
+TOKEN_URL = "https://allegro.pl/auth/oauth/token"
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
@@ -45,46 +51,94 @@ class Component(ComponentBase):
         # check for missing configuration parameters
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
+
         params = self.configuration.parameters
-        logging.info({
-            "key": params.get(KEY_CLIENT_ID),
-            "secret": params.get(KEY_CLIENT_SECRET),
-            'first_run': params.get(KEY_FIRST_RUN)})
-        logging.info(params)
-        # Access parameters in data/config.json
-        if params.get(KEY_CLIENT_ID):
-            logging.info("1")
 
-        if params.get(KEY_CLIENT_SECRET):
-            logging.info("1")
+        self.client_ID = params.get(KEY_CLIENT_ID)
+        self.client_secret = params.get(KEY_CLIENT_SECRET)
+        self.first_run = params.get(KEY_FIRST_RUN)
 
-        if params.get(KEY_FIRST_RUN):
-            logging.info("1")
+        if self.first_run:
+            code = self._get_code()
+            result = json.loads(code.text)
+            logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
+            access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
+            logging.info("Token retrieved successfully.")
+            logging.inf(access_token)
 
-        # get last state data/in/state.json from previous run
-        previous_state = self.get_state_file()
-        logging.info(previous_state.get('some_state_parameter'))
+        # params = self.configuration.parameters
+        # logging.info({
+        #     "key": params.get(KEY_CLIENT_ID),
+        #     "secret": params.get(KEY_CLIENT_SECRET),
+        #     'first_run': params.get(KEY_FIRST_RUN)})
+        # logging.info(params)
+        # # Access parameters in data/config.json
+        # if params.get(KEY_CLIENT_ID):
+        #     logging.info("1")
 
-        # Create output table (Tabledefinition - just metadata)
-        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
+        # if params.get(KEY_CLIENT_SECRET):
+        #     logging.info("1")
 
-        # get file path of the table (data/out/tables/Features.csv)
-        out_table_path = table.full_path
-        logging.info(out_table_path)
+        # if params.get(KEY_FIRST_RUN):
+        #     logging.info("1")
 
-        # DO whatever and save into out_table_path
-        with open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file:
-            writer = csv.DictWriter(out_file, fieldnames=['timestamp'])
-            writer.writeheader()
-            writer.writerow({"timestamp": datetime.now().isoformat()})
+        # # get last state data/in/state.json from previous run
+        # previous_state = self.get_state_file()
+        # logging.info(previous_state.get('some_state_parameter'))
 
-        # Save table manifest (output.csv.manifest) from the tabledefinition
-        self.write_manifest(table)
+        # # Create output table (Tabledefinition - just metadata)
+        # table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
 
-        # Write new state - will be available next run
-        self.write_state_file({"some_state_parameter": "value"})
+        # # get file path of the table (data/out/tables/Features.csv)
+        # out_table_path = table.full_path
+        # logging.info(out_table_path)
 
-        # ####### EXAMPLE TO REMOVE END
+        # # DO whatever and save into out_table_path
+        # with open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file:
+        #     writer = csv.DictWriter(out_file, fieldnames=['timestamp'])
+        #     writer.writeheader()
+        #     writer.writerow({"timestamp": datetime.now().isoformat()})
+
+        # # Save table manifest (output.csv.manifest) from the tabledefinition
+        # self.write_manifest(table)
+
+        # # Write new state - will be available next run
+        # self.write_state_file({"some_state_parameter": "value"})
+
+        # # ####### EXAMPLE TO REMOVE END
+
+    def _get_code(self):
+        try:
+            payload = {'client_id': self.CLIENT_ID}
+            headers = {'Content-type': 'application/x-www-form-urlencoded'}
+            api_call_response = requests.post(CODE_URL, auth=(self.CLIENT_ID, self.CLIENT_SECRET),
+                                            headers=headers, data=payload, verify=False)
+            return api_call_response
+        except requests.exceptions.HTTPError as err:
+            raise SystemExit(err)
+
+    def _get_access_token(self, device_code):
+        try:
+            headers = {'Content-type': 'application/x-www-form-urlencoded'}
+            data = {'grant_type': 'urn:ietf:params:oauth:grant-type:device_code', 'device_code': device_code}
+            api_call_response = requests.post(TOKEN_URL, auth=(self.CLIENT_ID, self.CLIENT_SECRET),
+                                            headers=headers, data=data, verify=False)
+            return api_call_response
+        except requests.exceptions.HTTPError as err:
+            raise SystemExit(err)
+
+    def _await_for_access_token(self, interval, device_code):
+        while True:
+            time.sleep(interval)
+            result_access_token = self._get_access_token(device_code)
+            token = json.loads(result_access_token.text)
+            if result_access_token.status_code == 400:
+                if token['error'] == 'slow_down':
+                    interval += interval
+                if token['error'] == 'access_denied':
+                    break
+            else:
+                return token
 
 
 """
