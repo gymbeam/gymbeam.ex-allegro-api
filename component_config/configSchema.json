@@ -2,16 +2,22 @@
   "type": "object",
   "title": "extractor configuration",
   "required": [
-    "print_hello"
+    "client_id",
+    "client_secret",
+    "first_run"
   ],
   "properties": {
-    "print_hello": {
-      "type": "boolean",
-      "title": "Print Hello"
+    "client_id": {
+      "type": "string",
+      "title": "Allegro Client ID"
     },
-    "debug": {
+    "client_secret": {
+      "type": "string",
+      "title": "Allegro Client Secret"
+    },
+    "first_run": {
       "type": "boolean",
-      "title": "Debug"
+      "title": "First time running?"
     }
   }
 }
