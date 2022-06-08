@@ -11,8 +11,8 @@ from keboola.component.exceptions import UserException
 
 # configuration variables
 KEY_API_TOKEN = '#api_token'
-KEY_CLIENT_ID = 'client_id'
-KEY_CLIENT_SECRET = 'client_secret'
+KEY_CLIENT_ID = '#client_id'
+KEY_CLIENT_SECRET = '#client_secret'
 KEY_FIRST_RUN = 'first_run'
 
 # list of mandatory parameters => if some is missing,
@@ -46,6 +46,10 @@ class Component(ComponentBase):
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
         params = self.configuration.parameters
+        logging.info({
+            "key": params.get(KEY_CLIENT_ID), 
+            "secret": params.get(KEY_CLIENT_SECRET), 
+            'first_run': params.get(KEY_FIRST_RUN)})
         logging.info(params)
         # Access parameters in data/config.json
         if params.get(KEY_CLIENT_ID):
