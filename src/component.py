@@ -17,7 +17,8 @@ KEY_FIRST_RUN = 'first_run'
 
 # list of mandatory parameters => if some is missing,
 # component will fail with readable message on initialization.
-REQUIRED_PARAMETERS = []#[KEY_CLIENT_ID, KEY_CLIENT_SECRET, KEY_FIRST_RUN]
+REQUIRED_PARAMETERS = []
+#[KEY_CLIENT_ID, KEY_CLIENT_SECRET, KEY_FIRST_RUN]
 REQUIRED_IMAGE_PARS = []
 
 
