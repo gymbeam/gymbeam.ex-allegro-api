@@ -2,17 +2,19 @@
   "type": "object",
   "title": "extractor configuration",
   "required": [
-    "client_id",
-    "client_secret",
+    "#client_id",
+    "#client_secret",
     "first_run"
   ],
   "properties": {
-    "client_id": {
+    "#client_id": {
       "type": "string",
+      "format": "password",
       "title": "Allegro Client ID"
     },
-    "client_secret": {
+    "#client_secret": {
       "type": "string",
+      "format": "password",
       "title": "Allegro Client Secret"
     },
     "first_run": {
