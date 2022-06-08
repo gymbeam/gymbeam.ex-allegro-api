@@ -112,7 +112,7 @@ class Component(ComponentBase):
             payload = {'client_id': self.CLIENT_ID}
             headers = {'Content-type': 'application/x-www-form-urlencoded'}
             api_call_response = requests.post(
-                CODE_URL, auth=(self.CLIENT_ID, self.CLIENT_SECRET), 
+                CODE_URL, auth=(self.CLIENT_ID, self.CLIENT_SECRET),
                 headers=headers, data=payload, verify=False)
             return api_call_response
         except requests.exceptions.HTTPError as err:
