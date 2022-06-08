@@ -109,10 +109,10 @@ class Component(ComponentBase):
 
     def _get_code(self):
         try:
-            payload = {'client_id': self.CLIENT_ID}
+            payload = {'client_id': self.client_ID}
             headers = {'Content-type': 'application/x-www-form-urlencoded'}
             api_call_response = requests.post(
-                CODE_URL, auth=(self.CLIENT_ID, self.CLIENT_SECRET),
+                CODE_URL, auth=(self.client_ID, self.client_secret),
                 headers=headers, data=payload, verify=False)
             return api_call_response
         except requests.exceptions.HTTPError as err:
@@ -123,7 +123,7 @@ class Component(ComponentBase):
             headers = {'Content-type': 'application/x-www-form-urlencoded'}
             data = {'grant_type': 'urn:ietf:params:oauth:grant-type:device_code', 'device_code': device_code}
             api_call_response = requests.post(
-                TOKEN_URL, auth=(self.CLIENT_ID, self.CLIENT_SECRET),
+                TOKEN_URL, auth=(self.client_ID, self.client_secret),
                 headers=headers, data=data, verify=False)
             return api_call_response
         except requests.exceptions.HTTPError as err:
