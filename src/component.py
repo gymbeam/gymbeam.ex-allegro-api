@@ -14,6 +14,8 @@ from keboola.component.exceptions import UserException
 
 # configuration variables
 KEY_API_TOKEN = '#api_token'
+REFRESH_TOKEN = '#refresh_token'
+
 KEY_CLIENT_ID = '#client_id'
 KEY_CLIENT_SECRET = '#client_secret'
 KEY_FIRST_RUN = 'first_run'
@@ -57,14 +59,23 @@ class Component(ComponentBase):
         self.client_ID = params.get(KEY_CLIENT_ID)
         self.client_secret = params.get(KEY_CLIENT_SECRET)
         self.first_run = params.get(KEY_FIRST_RUN)
-
-        if self.first_run:
+        logging.info(params)
+        logging.info(params.get(KEY_API_TOKEN))
+        logging.info(params.get(REFRESH_TOKEN))
+        # get last state data/in/state.json from previous run
+        previous_state = self.get_state_file()
+        logging.info(previous_state)
+        logging.info(previous_state.get('#refresh_token'))
+        if previous_state.get('#refresh_token') == None:
             code = self._get_code()
             result = json.loads(code.text)
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
             access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
             logging.info("Token retrieved successfully.")
             logging.info(access_token)
+
+            # Write new state - will be available next run
+            self.write_state_file({"#api_key": access_token['access_token'], '#refresh_token': access_token['refresh_token']})
 
         # params = self.configuration.parameters
         # logging.info({
