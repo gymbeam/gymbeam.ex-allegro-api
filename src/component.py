@@ -66,7 +66,7 @@ class Component(ComponentBase):
         previous_state = self.get_state_file()
         logging.info(previous_state)
         logging.info(previous_state.get('#refresh_token'))
-        if previous_state.get('#refresh_token') == None:
+        if previous_state.get('#refresh_token') is None:
             code = self._get_code()
             result = json.loads(code.text)
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
