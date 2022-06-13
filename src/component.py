@@ -133,7 +133,7 @@ class Component(ComponentBase):
     def _get_access_token(self, device_code):
         try:
             headers = {'Content-type': 'application/x-www-form-urlencoded'}
-            data = {'grant_type': 'urn:ietf:params:oauth:grant-type:device_code', 
+            data = {'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
                 'device_code': device_code}
             api_call_response = requests.post(
                 TOKEN_URL, auth=(self.client_ID, self.client_secret),
