@@ -75,7 +75,8 @@ class Component(ComponentBase):
             logging.info(access_token)
 
             # Write new state - will be available next run
-            self.write_state_file({"#api_key": access_token['access_token'],
+            self.write_state_file({
+                "#api_key": access_token['access_token'],
                 '#refresh_token': access_token['refresh_token']})
 
         # params = self.configuration.parameters
@@ -133,7 +134,8 @@ class Component(ComponentBase):
     def _get_access_token(self, device_code):
         try:
             headers = {'Content-type': 'application/x-www-form-urlencoded'}
-            data = {'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
+            data = {
+                'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
                 'device_code': device_code}
             api_call_response = requests.post(
                 TOKEN_URL, auth=(self.client_ID, self.client_secret),
