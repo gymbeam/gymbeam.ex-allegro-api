@@ -64,7 +64,7 @@ class Component(ComponentBase):
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
             access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
             logging.info("Token retrieved successfully.")
-            logging.inf(access_token)
+            logging.info(access_token)
 
         # params = self.configuration.parameters
         # logging.info({
