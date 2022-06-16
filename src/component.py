@@ -59,7 +59,7 @@ class Component(ComponentBase):
         self.client_ID = params.get(KEY_CLIENT_ID)
         self.client_secret = params.get(KEY_CLIENT_SECRET)
         self.first_run = params.get(KEY_FIRST_RUN)
-        
+
         previous_state = self.get_state_file()
         if previous_state.get('#refresh_token') is None:
             code = self._get_code()
@@ -81,13 +81,13 @@ class Component(ComponentBase):
 
         url = 'https://api.allegro.pl/sale/offers/'
         get = requests.get(url, headers=header)
-        json = get.json()
-        json['timestamp'] = datetime.now().isoformat()
+        response = get.json()
+        response['timestamp'] = datetime.now().isoformat()
 
         with open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file:
             writer = csv.DictWriter(out_file, fieldnames=['timestamp'])
             writer.writeheader()
-            writer.writerow(json)
+            writer.writerow(response)
         self.write_manifest(table)
 
         self.write_state_file({
