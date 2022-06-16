@@ -71,6 +71,8 @@ class Component(ComponentBase):
             logging.info(access_token)
         else:
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
+            logging.info("Token retrieved successfully.")
+            logging.info(access_token)
 
         # Write new state - will be available next run\
         logging.info('Writing token')
