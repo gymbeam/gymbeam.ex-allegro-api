@@ -61,7 +61,7 @@ class Component(ComponentBase):
         self.first_run = params.get(KEY_FIRST_RUN)
         # get last state data/in/state.json from previous run
         previous_state = self.get_state_file()
-
+        logging.info(previous_state)
         if previous_state.get('#refresh_token') is None:
             code = self._get_code()
             result = json.loads(code.text)
@@ -70,10 +70,11 @@ class Component(ComponentBase):
             logging.info("Token retrieved successfully.")
             logging.info(access_token)
         else:
+            logging.info("Here.")
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
             logging.info("Token retrieved successfully.")
             logging.info(access_token)
-
+        logging.info("Here 2")
         # Write new state - will be available next run\
         logging.info('Writing token')
         self.write_state_file({
