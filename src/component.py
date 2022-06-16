@@ -72,7 +72,6 @@ class Component(ComponentBase):
         else:
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
 
-
         # Write new state - will be available next run\
         logging.info('Writing token')
         self.write_state_file({
@@ -167,7 +166,6 @@ class Component(ComponentBase):
             return tokens
         except requests.exceptions.HTTPError as err:
             raise SystemExit(err)
-
 
 """
         Main entrypoint
