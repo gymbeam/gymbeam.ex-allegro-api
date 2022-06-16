@@ -161,7 +161,7 @@ class Component(ComponentBase):
         try:
             data = {'grant_type': 'refresh_token', 'refresh_token': token, 'redirect_uri': REDIRECT_URI}
             access_token_response = requests.post(
-                TOKEN_URL,  data=data, verify=False, allow_redirects=False, 
+                TOKEN_URL,  data=data, verify=False, allow_redirects=False,
                 auth=(self.client_ID, self.client_secret))
             tokens = json.loads(access_token_response.text)
             return tokens
