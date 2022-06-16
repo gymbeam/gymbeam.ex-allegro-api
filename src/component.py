@@ -59,13 +59,9 @@ class Component(ComponentBase):
         self.client_ID = params.get(KEY_CLIENT_ID)
         self.client_secret = params.get(KEY_CLIENT_SECRET)
         self.first_run = params.get(KEY_FIRST_RUN)
-        logging.info(params)
-        logging.info(params.get(KEY_API_TOKEN))
-        logging.info(params.get(REFRESH_TOKEN))
         # get last state data/in/state.json from previous run
         previous_state = self.get_state_file()
-        logging.info(previous_state)
-        logging.info(previous_state.get('#refresh_token'))
+
         if previous_state.get('#refresh_token') is None:
             code = self._get_code()
             result = json.loads(code.text)
@@ -73,11 +69,15 @@ class Component(ComponentBase):
             access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
             logging.info("Token retrieved successfully.")
             logging.info(access_token)
+        else:
+            access_token = self._get_next_token(previous_state.get('#refresh_token'))
 
-            # Write new state - will be available next run
-            self.write_state_file({
-                "#api_key": access_token['access_token'],
-                '#refresh_token': access_token['refresh_token']})
+
+        # Write new state - will be available next run\
+        logging.info('Writing token')
+        self.write_state_file({
+            "#api_key": access_token['access_token'],
+            '#refresh_token': access_token['refresh_token']})
 
         # params = self.configuration.parameters
         # logging.info({
@@ -156,6 +156,17 @@ class Component(ComponentBase):
                     break
             else:
                 return token
+
+    def _get_next_token(self, token):
+        REDIRECT_URI = "www.example.com"
+        try:
+            data = {'grant_type': 'refresh_token', 'refresh_token': token, 'redirect_uri': REDIRECT_URI}
+            access_token_response = requests.post(TOKEN_URL, data=data, verify=False,
+                                                allow_redirects=False, auth=(self.client_ID, self.client_secret))
+            tokens = json.loads(access_token_response.text)
+            return tokens
+        except requests.exceptions.HTTPError as err:
+            raise SystemExit(err)
 
 
 """
