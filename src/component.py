@@ -2,10 +2,10 @@
 Template Component main class.
 
 """
-# import csv
+import csv
 import logging
 import requests
-# from datetime import datetime
+from datetime import datetime
 import json
 import time
 
@@ -61,66 +61,38 @@ class Component(ComponentBase):
         self.first_run = params.get(KEY_FIRST_RUN)
         # get last state data/in/state.json from previous run
         previous_state = self.get_state_file()
-        logging.info(previous_state)
         if previous_state.get('#refresh_token') is None:
             code = self._get_code()
             result = json.loads(code.text)
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
-            access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
-            logging.info("Token retrieved successfully.")
-            logging.info(access_token)
+            access_token = self._await_for_access_token(int(result['interval']), result['device_code']) 
         else:
-            logging.info("Here.")
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
-            logging.info("Token retrieved successfully.")
-            logging.info(access_token)
-        logging.info("Here 2")
-        # Write new state - will be available next run\
-        logging.info('Writing token')
+
+        logging.info("Token retrieved successfully.")
+
+        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
+        header = {
+            'Authorization': f'Bearer {access_token["access_token"]}',
+            'accept': 'application/vnd.allegro.public.v1+json',
+            'content-type': 'application/vnd.allegro.public.v1+json',
+            'Accept-Language': 'EN'
+        }
+
+        url = 'https://api.allegro.pl/sale/offers/'
+        get = requests.get(url, headers=header)
+        json = get.json()
+        json['timestamp'] = datetime.now().isoformat()
+        
+        with open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file:
+            writer = csv.DictWriter(out_file, fieldnames=['timestamp'])
+            writer.writeheader()
+            writer.writerow(json)
+        self.write_manifest(table)
+
         self.write_state_file({
             "#api_key": access_token['access_token'],
             '#refresh_token': access_token['refresh_token']})
-
-        # params = self.configuration.parameters
-        # logging.info({
-        #     "key": params.get(KEY_CLIENT_ID),
-        #     "secret": params.get(KEY_CLIENT_SECRET),
-        #     'first_run': params.get(KEY_FIRST_RUN)})
-        # logging.info(params)
-        # # Access parameters in data/config.json
-        # if params.get(KEY_CLIENT_ID):
-        #     logging.info("1")
-
-        # if params.get(KEY_CLIENT_SECRET):
-        #     logging.info("1")
-
-        # if params.get(KEY_FIRST_RUN):
-        #     logging.info("1")
-
-        # # get last state data/in/state.json from previous run
-        # previous_state = self.get_state_file()
-        # logging.info(previous_state.get('some_state_parameter'))
-
-        # # Create output table (Tabledefinition - just metadata)
-        # table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
-
-        # # get file path of the table (data/out/tables/Features.csv)
-        # out_table_path = table.full_path
-        # logging.info(out_table_path)
-
-        # # DO whatever and save into out_table_path
-        # with open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file:
-        #     writer = csv.DictWriter(out_file, fieldnames=['timestamp'])
-        #     writer.writeheader()
-        #     writer.writerow({"timestamp": datetime.now().isoformat()})
-
-        # # Save table manifest (output.csv.manifest) from the tabledefinition
-        # self.write_manifest(table)
-
-        # # Write new state - will be available next run
-        # self.write_state_file({"some_state_parameter": "value"})
-
-        # # ####### EXAMPLE TO REMOVE END
 
     def _get_code(self):
         try:
