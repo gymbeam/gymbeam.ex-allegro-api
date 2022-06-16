@@ -59,13 +59,13 @@ class Component(ComponentBase):
         self.client_ID = params.get(KEY_CLIENT_ID)
         self.client_secret = params.get(KEY_CLIENT_SECRET)
         self.first_run = params.get(KEY_FIRST_RUN)
-        # get last state data/in/state.json from previous run
+        
         previous_state = self.get_state_file()
         if previous_state.get('#refresh_token') is None:
             code = self._get_code()
             result = json.loads(code.text)
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
-            access_token = self._await_for_access_token(int(result['interval']), result['device_code']) 
+            access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
         else:
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
 
@@ -83,7 +83,7 @@ class Component(ComponentBase):
         get = requests.get(url, headers=header)
         json = get.json()
         json['timestamp'] = datetime.now().isoformat()
-        
+
         with open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file:
             writer = csv.DictWriter(out_file, fieldnames=['timestamp'])
             writer.writeheader()
