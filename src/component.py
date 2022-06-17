@@ -63,12 +63,13 @@ class Component(ComponentBase):
 
         previous_state = self.get_state_file()
         if previous_state.get('#refresh_token') is None:
+            logging.info('1')
             code = self._get_code()
             result = json.loads(code.text)
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
             access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
         else:
-            print(previous_state.get('#refresh_token'))
+            logging.info('2')
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
 
         logging.info("Token retrieved successfully.")
@@ -79,10 +80,11 @@ class Component(ComponentBase):
             'content-type': 'application/vnd.allegro.public.v1+json',
             'Accept-Language': 'EN'
         }
-
+        logging.info('3')
         url = 'https://api.allegro.pl/billing/billing-entries'
         get = requests.get(url, headers=header)
         data = get.json()
+        logging.info('4')
         df = pd.DataFrame.from_dict(data['billingEntries'])
         df['typeID'] = df['type'].apply(lambda x: x.get('id'))
         df['typeName'] = df['type'].apply(lambda x: x.get('name'))
@@ -105,16 +107,17 @@ class Component(ComponentBase):
         df['balanceAmount'] = df['balance'].apply(lambda x: x.get('amount') if isinstance(x, dict) else np.nan)
         df['balanceCurrency'] = df['balance'].apply(lambda x: x.get('currency') if isinstance(x, dict) else np.nan)
         df = df.drop(['balance'], axis=1)
-
+        logging.info('5')
         df['timestamp'] = datetime.now().isoformat()
-
+        logging.info('6')
         df.to_csv(table.full_path)
 
         self.write_manifest(table)
-
+        logging.info('7')
         self.write_state_file({
             "#api_key": access_token['access_token'],
             '#refresh_token': access_token['refresh_token']})
+        logging.info('8')
 
     def _get_code(self):
         try:
