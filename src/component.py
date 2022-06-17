@@ -72,7 +72,7 @@ class Component(ComponentBase):
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
 
         logging.info("Token retrieved successfully.")
-        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
+        table = self.create_out_table_definition('output.csv')
         header = {
             'Authorization': f'Bearer {access_token["access_token"]}',
             'accept': 'application/vnd.allegro.public.v1+json',
