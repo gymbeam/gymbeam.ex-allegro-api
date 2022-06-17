@@ -8,6 +8,8 @@ import requests
 from datetime import datetime
 import json
 import time
+import pandas as pd
+import numpy as np
 
 from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
@@ -67,10 +69,10 @@ class Component(ComponentBase):
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
             access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
         else:
+            print(previous_state.get('#refresh_token'))
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
 
         logging.info("Token retrieved successfully.")
-
         table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
         header = {
             'Authorization': f'Bearer {access_token["access_token"]}',
@@ -79,15 +81,36 @@ class Component(ComponentBase):
             'Accept-Language': 'EN'
         }
 
-        url = 'https://api.allegro.pl/sale/offers/'
+        url = 'https://api.allegro.pl/billing/billing-entries'
         get = requests.get(url, headers=header)
-        response = get.json()
-        response['timestamp'] = datetime.now().isoformat()
+        data = get.json()
+        df = pd.DataFrame.from_dict(data['billingEntries'])
+        df['typeID'] = df['type'].apply(lambda x: x.get('id'))
+        df['typeName'] = df['type'].apply(lambda x: x.get('name'))
+        df = df.drop(['type'], axis=1)
 
-        with open(table.full_path, mode='wt', encoding='utf-8', newline='') as out_file:
-            writer = csv.DictWriter(out_file, fieldnames=['timestamp'])
-            writer.writeheader()
-            writer.writerow(response)
+        df['amount'] = df['value'].apply(lambda x: x.get('amount'))
+        df['typecurrencyName'] = df['value'].apply(lambda x: x.get('currency'))
+        df = df.drop(['value'], axis=1)
+
+        df['tax'] = df['tax'].apply(lambda x: x.get('percentage'))
+        df = df.drop(['tax'], axis=1)
+
+        df['orderID'] = df['order'].apply(lambda x: x.get('id') if isinstance(x, dict) else np.nan)
+        df = df.drop(['order'], axis=1)
+
+        df['offerID'] = df['offer'].apply(lambda x: x.get('id') if isinstance(x, dict) else np.nan)
+        df['offerName'] = df['offer'].apply(lambda x: x.get('name') if isinstance(x, dict) else np.nan)
+        df = df.drop(['offer'], axis=1)
+
+        df['balanceAmount'] = df['balance'].apply(lambda x: x.get('amount') if isinstance(x, dict) else np.nan)
+        df['balanceCurrency'] = df['balance'].apply(lambda x: x.get('currency') if isinstance(x, dict) else np.nan)
+        df = df.drop(['balance'], axis=1)
+
+        df['timestamp'] = datetime.now().isoformat()
+
+        df.to_csv(table.full_path)
+
         self.write_manifest(table)
 
         self.write_state_file({
