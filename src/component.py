@@ -110,7 +110,7 @@ class Component(ComponentBase):
         logging.info('5')
         df['timestamp'] = datetime.now().isoformat()
         logging.info('6')
-        df.to_csv(table.full_path)
+        df.to_csv(table.full_path, index=False)
 
         self.write_manifest(table)
         logging.info('7')
