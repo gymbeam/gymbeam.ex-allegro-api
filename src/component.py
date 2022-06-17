@@ -73,19 +73,26 @@ class Component(ComponentBase):
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
 
         logging.info("Token retrieved successfully.")
-        table = self.create_out_table_definition('output.csv')
+
+        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
+
         header = {
             'Authorization': f'Bearer {access_token["access_token"]}',
             'accept': 'application/vnd.allegro.public.v1+json',
             'content-type': 'application/vnd.allegro.public.v1+json',
             'Accept-Language': 'EN'
         }
+
         logging.info('3')
+
         url = 'https://api.allegro.pl/billing/billing-entries'
         get = requests.get(url, headers=header)
         data = get.json()
+
         logging.info('4')
+
         df = pd.DataFrame.from_dict(data['billingEntries'])
+
         df['typeID'] = df['type'].apply(lambda x: x.get('id'))
         df['typeName'] = df['type'].apply(lambda x: x.get('name'))
         df = df.drop(['type'], axis=1)
@@ -107,16 +114,23 @@ class Component(ComponentBase):
         df['balanceAmount'] = df['balance'].apply(lambda x: x.get('amount') if isinstance(x, dict) else np.nan)
         df['balanceCurrency'] = df['balance'].apply(lambda x: x.get('currency') if isinstance(x, dict) else np.nan)
         df = df.drop(['balance'], axis=1)
+
         logging.info('5')
+
         df['timestamp'] = datetime.now().isoformat()
+
         logging.info('6')
+
         df.to_csv(table.full_path, index=False)
 
         self.write_manifest(table)
+
         logging.info('7')
+
         self.write_state_file({
             "#api_key": access_token['access_token'],
             '#refresh_token': access_token['refresh_token']})
+
         logging.info('8')
 
     def _get_code(self):
