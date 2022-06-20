@@ -14,12 +14,8 @@ from keboola.component.base import ComponentBase
 from keboola.component.exceptions import UserException
 
 # configuration variables
-KEY_API_TOKEN = '#api_token'
-REFRESH_TOKEN = '#refresh_token'
-
 KEY_CLIENT_ID = '#client_id'
 KEY_CLIENT_SECRET = '#client_secret'
-KEY_FIRST_RUN = 'first_run'
 
 CODE_URL = "https://allegro.pl/auth/oauth/device"
 TOKEN_URL = "https://allegro.pl/auth/oauth/token"
@@ -59,18 +55,20 @@ class Component(ComponentBase):
 
         self.client_ID = params.get(KEY_CLIENT_ID)
         self.client_secret = params.get(KEY_CLIENT_SECRET)
-        self.first_run = params.get(KEY_FIRST_RUN)
 
         previous_state = self.get_state_file()
         if previous_state.get('#refresh_token') is None:
             logging.info('1')
             code = self._get_code()
             result = json.loads(code.text)
+            logging.info(result)
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
             access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
         else:
             logging.info('2')
+            logging.info(previous_state.get('#refresh_token'))
             access_token = self._get_next_token(previous_state.get('#refresh_token'))
+            logging.info(access_token)
 
         logging.info("Token retrieved successfully.")
 
@@ -171,13 +169,14 @@ class Component(ComponentBase):
                 return token
 
     def _get_next_token(self, token):
-        REDIRECT_URI = "www.example.com"
+        REDIRECT_URI = "https://www.example.com"
         try:
             data = {'grant_type': 'refresh_token', 'refresh_token': token, 'redirect_uri': REDIRECT_URI}
             access_token_response = requests.post(
                 TOKEN_URL,  data=data, verify=False, allow_redirects=False,
                 auth=(self.client_ID, self.client_secret))
             tokens = json.loads(access_token_response.text)
+            print(tokens)
             return tokens
         except requests.exceptions.HTTPError as err:
             raise SystemExit(err)
