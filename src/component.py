@@ -175,6 +175,7 @@ class Component(ComponentBase):
 
         self.write_manifest(table)
 
+
 """
         Main entrypoint
 """
