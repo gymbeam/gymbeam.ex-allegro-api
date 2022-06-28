@@ -16,6 +16,7 @@ from keboola.component.exceptions import UserException
 # configuration variables
 KEY_CLIENT_ID = '#client_id'
 KEY_CLIENT_SECRET = '#client_secret'
+ENDPOINTS = 'endpoint'
 
 CODE_URL = "https://allegro.pl/auth/oauth/device"
 TOKEN_URL = "https://allegro.pl/auth/oauth/token"
@@ -55,7 +56,8 @@ class Component(ComponentBase):
 
         self.client_ID = params.get(KEY_CLIENT_ID)
         self.client_secret = params.get(KEY_CLIENT_SECRET)
-
+        self.endpoint = params.get(ENDPOINTS)
+        
         previous_state = self.get_state_file()
         if previous_state.get('#refresh_token') is None:
             logging.info('1')
