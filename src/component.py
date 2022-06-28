@@ -169,7 +169,7 @@ class Component(ComponentBase):
             get = requests.get(url, headers=header)
             df = parse_biling_entries(get.json())
 
-        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
+        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['id'])
 
         df.to_csv(table.full_path, index=False)
 
