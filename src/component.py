@@ -63,7 +63,7 @@ class Component(ComponentBase):
             code = self._get_code()
             result = json.loads(code.text)
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
-            access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
+            self.access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
         else:
             self.access_token = self._get_next_token(previous_state.get('#refresh_token'))
 
@@ -72,8 +72,8 @@ class Component(ComponentBase):
         self._call_endpoint()
 
         self.write_state_file({
-            "#api_key": access_token['access_token'],
-            '#refresh_token': access_token['refresh_token']})
+            "#api_key": self.access_token['access_token'],
+            '#refresh_token': self.access_token['refresh_token']})
 
         logging.info('8')
 
