@@ -60,72 +60,16 @@ class Component(ComponentBase):
 
         previous_state = self.get_state_file()
         if previous_state.get('#refresh_token') is None:
-            logging.info('1')
             code = self._get_code()
             result = json.loads(code.text)
-            logging.info(result)
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
             access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
         else:
-            logging.info('2')
-            logging.info(previous_state.get('#refresh_token'))
-            access_token = self._get_next_token(previous_state.get('#refresh_token'))
-            logging.info(access_token)
+            self.access_token = self._get_next_token(previous_state.get('#refresh_token'))
 
         logging.info("Token retrieved successfully.")
 
-        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
-
-        header = {
-            'Authorization': f'Bearer {access_token["access_token"]}',
-            'accept': 'application/vnd.allegro.public.v1+json',
-            'content-type': 'application/vnd.allegro.public.v1+json',
-            'Accept-Language': 'EN'
-        }
-
-        logging.info('3')
-
-        url = 'https://api.allegro.pl/billing/billing-entries'
-        get = requests.get(url, headers=header)
-        data = get.json()
-
-        logging.info('4')
-
-        df = pd.DataFrame.from_dict(data['billingEntries'])
-
-        df['typeID'] = df['type'].apply(lambda x: x.get('id'))
-        df['typeName'] = df['type'].apply(lambda x: x.get('name'))
-        df = df.drop(['type'], axis=1)
-
-        df['amount'] = df['value'].apply(lambda x: x.get('amount'))
-        df['typecurrencyName'] = df['value'].apply(lambda x: x.get('currency'))
-        df = df.drop(['value'], axis=1)
-
-        df['tax'] = df['tax'].apply(lambda x: x.get('percentage'))
-        df = df.drop(['tax'], axis=1)
-
-        df['orderID'] = df['order'].apply(lambda x: x.get('id') if isinstance(x, dict) else np.nan)
-        df = df.drop(['order'], axis=1)
-
-        df['offerID'] = df['offer'].apply(lambda x: x.get('id') if isinstance(x, dict) else np.nan)
-        df['offerName'] = df['offer'].apply(lambda x: x.get('name') if isinstance(x, dict) else np.nan)
-        df = df.drop(['offer'], axis=1)
-
-        df['balanceAmount'] = df['balance'].apply(lambda x: x.get('amount') if isinstance(x, dict) else np.nan)
-        df['balanceCurrency'] = df['balance'].apply(lambda x: x.get('currency') if isinstance(x, dict) else np.nan)
-        df = df.drop(['balance'], axis=1)
-
-        logging.info('5')
-
-        df['timestamp'] = datetime.now().isoformat()
-
-        logging.info('6')
-
-        df.to_csv(table.full_path, index=False)
-
-        self.write_manifest(table)
-
-        logging.info('7')
+        self._call_endpoint()
 
         self.write_state_file({
             "#api_key": access_token['access_token'],
@@ -183,6 +127,53 @@ class Component(ComponentBase):
         except requests.exceptions.HTTPError as err:
             raise SystemExit(err)
 
+    def _call_endpoint(self):
+        header = {
+            'Authorization': f'Bearer {self.access_token["access_token"]}',
+            'accept': 'application/vnd.allegro.public.v1+json',
+            'content-type': 'application/vnd.allegro.public.v1+json',
+            'Accept-Language': 'EN'
+        }
+
+        def parse_biling_entries(data):
+            df = pd.DataFrame.from_dict(data['billingEntries'])
+
+            df['typeID'] = df['type'].apply(lambda x: x.get('id'))
+            df['typeName'] = df['type'].apply(lambda x: x.get('name'))
+            df = df.drop(['type'], axis=1)
+
+            df['amount'] = df['value'].apply(lambda x: x.get('amount'))
+            df['typecurrencyName'] = df['value'].apply(lambda x: x.get('currency'))
+            df = df.drop(['value'], axis=1)
+
+            df['tax'] = df['tax'].apply(lambda x: x.get('percentage'))
+            df = df.drop(['tax'], axis=1)
+
+            df['orderID'] = df['order'].apply(lambda x: x.get('id') if isinstance(x, dict) else np.nan)
+            df = df.drop(['order'], axis=1)
+
+            df['offerID'] = df['offer'].apply(lambda x: x.get('id') if isinstance(x, dict) else np.nan)
+            df['offerName'] = df['offer'].apply(lambda x: x.get('name') if isinstance(x, dict) else np.nan)
+            df = df.drop(['offer'], axis=1)
+
+            df['balanceAmount'] = df['balance'].apply(lambda x: x.get('amount') if isinstance(x, dict) else np.nan)
+            df['balanceCurrency'] = df['balance'].apply(lambda x: x.get('currency') if isinstance(x, dict) else np.nan)
+            df = df.drop(['balance'], axis=1)
+
+            df['timestamp'] = datetime.now().isoformat()
+
+            return df
+
+        if self.endpoint == 'Billing entries':
+            url = 'https://api.allegro.pl/billing/billing-entries'
+            get = requests.get(url, headers=header)
+            df = parse_biling_entries(get.json())
+
+        table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['timestamp'])
+
+        df.to_csv(table.full_path, index=False)
+
+        self.write_manifest(table)
 
 """
         Main entrypoint

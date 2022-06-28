@@ -20,8 +20,8 @@
       "title": "Endpoint",
       "type": "string",
       "enum": [
-        "endpoint x",
-         "endpoint y"
+        "Billing entries",
+        "endpoint y"
       ]
     }
   }
