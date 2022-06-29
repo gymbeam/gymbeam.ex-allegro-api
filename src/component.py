@@ -4,7 +4,7 @@ Template Component main class.
 """
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta, time, date
 import json
 import time
 import pandas as pd
@@ -17,6 +17,7 @@ from keboola.component.exceptions import UserException
 KEY_CLIENT_ID = '#client_id'
 KEY_CLIENT_SECRET = '#client_secret'
 ENDPOINTS = 'endpoint'
+DAILY = 'daily_load'
 
 CODE_URL = "https://allegro.pl/auth/oauth/device"
 TOKEN_URL = "https://allegro.pl/auth/oauth/token"
@@ -57,6 +58,7 @@ class Component(ComponentBase):
         self.client_ID = params.get(KEY_CLIENT_ID)
         self.client_secret = params.get(KEY_CLIENT_SECRET)
         self.endpoint = params.get(ENDPOINTS)
+        self.daily = params.get(DAILY)
 
         previous_state = self.get_state_file()
         if previous_state.get('#refresh_token') is None:
@@ -135,6 +137,37 @@ class Component(ComponentBase):
             'Accept-Language': 'EN'
         }
 
+        def date_range_list(start_date, end_date):
+            date_list = []
+            curr_date = start_date
+            while curr_date <= end_date:
+                date_list.append(curr_date)
+                curr_date += timedelta(days=1)
+            return date_list
+
+        def get_data(date_list):
+            results = {'billingEntries': []}
+            for date in date_list[::-1]:
+                start = datetime.combine(date, time(00, 00, 00, 000000)).isoformat()
+                end = datetime.combine(date, time(23, 59, 59, 999999)).isoformat()
+                offset = 0
+                while True:
+                    url = f"https://api.allegro.pl/billing/billing-entries?offset={offset}&occurredAt.gte={start}Z&&occurredAt.lte={end}Z"
+
+                    get = requests.get(url, headers=header)
+                    data = get.json()
+
+                    results['billingEntries'].extend(data['billingEntries'])
+                    number_of_results = len(data['billingEntries'])
+
+                    if number_of_results < 100:
+                        break
+
+                    if number_of_results == 100:
+                        offset += 100
+                        
+            return results
+
         def parse_biling_entries(data):
             df = pd.DataFrame.from_dict(data['billingEntries'])
 
@@ -165,9 +198,16 @@ class Component(ComponentBase):
             return df
 
         if self.endpoint == 'Billing entries':
-            url = 'https://api.allegro.pl/billing/billing-entries'
-            get = requests.get(url, headers=header)
-            df = parse_biling_entries(get.json())
+            if self.daily == False:
+                start_date = stop_date = datetime.today().date() - timedelta(days=1)
+                date_list = date_range_list(start_date, stop_date)
+            else:
+                start_date = date(year=2020, month=1, day=1)
+                stop_date = datetime.today().date()
+                date_list = date_range_list(start_date, stop_date)
+
+        result = get_data(date_list)
+        df = parse_biling_entries(result)
 
         table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['id'])
 

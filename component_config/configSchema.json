@@ -3,7 +3,9 @@
   "title": "extractor configuration",
   "required": [
     "#client_id",
-    "#client_secret"
+    "#client_secret",
+    "daily_load",
+    "endpoint"
   ],
   "properties": {
     "#client_id": {
@@ -20,9 +22,12 @@
       "title": "Endpoint",
       "type": "string",
       "enum": [
-        "Billing entries",
-        "endpoint y"
+        "Billing entries"
       ]
+    },
+    "daily_load": {
+      "type": "boolean",
+      "title": "Daily load"
     }
   }
 }
