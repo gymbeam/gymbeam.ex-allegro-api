@@ -48,8 +48,6 @@ class Component(ComponentBase):
         Main execution code
         """
 
-        # ####### EXAMPLE TO REMOVE
-        # check for missing configuration parameters
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
 
@@ -64,6 +62,7 @@ class Component(ComponentBase):
         if previous_state.get('#refresh_token') is None:
             code = self._get_code()
             result = json.loads(code.text)
+            logging.info('Manual loggin needed for initial run.')
             logging.info("User, open this address in the browser:" + result['verification_uri_complete'])
             self.access_token = self._await_for_access_token(int(result['interval']), result['device_code'])
         else:
@@ -71,13 +70,11 @@ class Component(ComponentBase):
 
         logging.info("Token retrieved successfully.")
 
-        self._call_endpoint()
+        self._hit_endpoint()
 
         self.write_state_file({
             "#api_key": self.access_token['access_token'],
             '#refresh_token': self.access_token['refresh_token']})
-
-        logging.info('8')
 
     def _get_code(self):
         try:
@@ -129,7 +126,7 @@ class Component(ComponentBase):
         except requests.exceptions.HTTPError as err:
             raise SystemExit(err)
 
-    def _call_endpoint(self):
+    def _hit_endpoint(self):
         header = {
             'Authorization': f'Bearer {self.access_token["access_token"]}',
             'accept': 'application/vnd.allegro.public.v1+json',
@@ -198,22 +195,29 @@ class Component(ComponentBase):
 
             return df
 
-        if self.endpoint == 'Billing entries':
-            if self.daily:
-                start_date = stop_date = datetime.today().date() - timedelta(days=1)
-                date_list = date_range_list(start_date, stop_date)
-            else:
-                start_date = date(year=2020, month=1, day=1)
-                stop_date = datetime.today().date()
-                date_list = date_range_list(start_date, stop_date)
+        # if self.endpoint == 'Billing entries':
+        logging.info('Getting dates.')
+        if self.daily:
+            start_date = stop_date = datetime.today().date() - timedelta(days=1)
+            date_list = date_range_list(start_date, stop_date)
+        else:
+            start_date = date(year=2020, month=1, day=1)
+            stop_date = datetime.today().date()
+            date_list = date_range_list(start_date, stop_date)
 
+        logging.info('Hitting endpoint for each date.')
         result = get_data(date_list)
+
+        logging.info('Parsing data.')
         df = parse_biling_entries(result)
 
+        logging.info('Creating temporary table')
         table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['id'])
 
+        logging.info('Loading data into temporary table.')
         df.to_csv(table.full_path, index=False)
 
+        logging.info('Loading data into storage.')
         self.write_manifest(table)
 
 
