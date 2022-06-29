@@ -6,7 +6,7 @@ import logging
 import requests
 from datetime import datetime, timedelta, time, date
 import json
-import time
+import time as time2
 import pandas as pd
 import numpy as np
 
@@ -105,7 +105,7 @@ class Component(ComponentBase):
 
     def _await_for_access_token(self, interval, device_code):
         while True:
-            time.sleep(interval)
+            time2.sleep(interval)
             result_access_token = self._get_access_token(device_code)
             token = json.loads(result_access_token.text)
             if result_access_token.status_code == 400:
@@ -147,12 +147,13 @@ class Component(ComponentBase):
 
         def get_data(date_list):
             results = {'billingEntries': []}
-            for date in date_list[::-1]:
-                start = datetime.combine(date, time(00, 00, 00, 000000)).isoformat()
-                end = datetime.combine(date, time(23, 59, 59, 999999)).isoformat()
+            for day in date_list[::-1]:
+                start = datetime.combine(day, time(00, 00, 00, 000000)).isoformat()
+                end = datetime.combine(day, time(23, 59, 59, 999999)).isoformat()
                 offset = 0
                 while True:
-                    url = f"https://api.allegro.pl/billing/billing-entries?offset={offset}&occurredAt.gte={start}Z&&occurredAt.lte={end}Z"
+                    url = f"""https://api.allegro.pl/billing/billing-entries?offset={offset}"""\
+                    f"""&occurredAt.gte={start}Z&&occurredAt.lte={end}Z"""
 
                     get = requests.get(url, headers=header)
                     data = get.json()
@@ -165,7 +166,7 @@ class Component(ComponentBase):
 
                     if number_of_results == 100:
                         offset += 100
-                        
+  
             return results
 
         def parse_biling_entries(data):
@@ -198,7 +199,7 @@ class Component(ComponentBase):
             return df
 
         if self.endpoint == 'Billing entries':
-            if self.daily == False:
+            if self.daily:
                 start_date = stop_date = datetime.today().date() - timedelta(days=1)
                 date_list = date_range_list(start_date, stop_date)
             else:
