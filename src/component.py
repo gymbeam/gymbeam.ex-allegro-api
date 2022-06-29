@@ -153,7 +153,7 @@ class Component(ComponentBase):
                 offset = 0
                 while True:
                     url = f"""https://api.allegro.pl/billing/billing-entries?offset={offset}"""\
-                    f"""&occurredAt.gte={start}Z&&occurredAt.lte={end}Z"""
+                        f"""&occurredAt.gte={start}Z&&occurredAt.lte={end}Z"""
 
                     get = requests.get(url, headers=header)
                     data = get.json()
@@ -166,7 +166,7 @@ class Component(ComponentBase):
 
                     if number_of_results == 100:
                         offset += 100
-  
+
             return results
 
         def parse_biling_entries(data):
