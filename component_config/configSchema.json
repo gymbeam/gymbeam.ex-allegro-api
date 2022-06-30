@@ -28,6 +28,10 @@
     "daily_load": {
       "type": "boolean",
       "title": "Daily load"
+    },
+    "manual_authentication": {
+      "type": "boolean",
+      "title": "Manual Authentication"
     }
   }
 }

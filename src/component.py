@@ -18,6 +18,7 @@ KEY_CLIENT_ID = '#client_id'
 KEY_CLIENT_SECRET = '#client_secret'
 ENDPOINTS = 'endpoint'
 DAILY = 'daily_load'
+AUTHENTICATION = 'manual_authentication'
 
 CODE_URL = "https://allegro.pl/auth/oauth/device"
 TOKEN_URL = "https://allegro.pl/auth/oauth/token"
@@ -57,9 +58,10 @@ class Component(ComponentBase):
         self.client_secret = params.get(KEY_CLIENT_SECRET)
         self.endpoint = params.get(ENDPOINTS)
         self.daily = params.get(DAILY)
+        self.authentication = params.get(AUTHENTICATION)
 
         previous_state = self.get_state_file()
-        if previous_state.get('#refresh_token') is None:
+        if self.authentication:
             code = self._get_code()
             result = json.loads(code.text)
             logging.info('Manual loggin needed for initial run.')
