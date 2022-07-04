@@ -152,6 +152,7 @@ class Component(ComponentBase):
                 offset = 0
                 while True:
                     url = f"""https://api.allegro.pl/billing/billing-entries?offset={offset}"""\
+                        f"""&type.id=[BRG,FSF,BC2,SUC]&"""\
                         f"""&occurredAt.gte={start}Z&&occurredAt.lte={end}Z"""
 
                     get = requests.get(url, headers=header)
