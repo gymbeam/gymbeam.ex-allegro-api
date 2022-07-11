@@ -194,8 +194,6 @@ class Component(ComponentBase):
             df['balanceCurrency'] = df['balance'].apply(lambda x: x.get('currency') if isinstance(x, dict) else np.nan)
             df = df.drop(['balance'], axis=1)
 
-            df['timestamp'] = datetime.now().isoformat()
-
             return df
 
         # if self.endpoint == 'Billing entries':
