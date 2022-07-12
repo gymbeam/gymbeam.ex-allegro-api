@@ -49,9 +49,11 @@ class Component(ComponentBase):
         Main execution code
         """
 
+        # Validate configurations
         self.validate_configuration_parameters(REQUIRED_PARAMETERS)
         self.validate_image_parameters(REQUIRED_IMAGE_PARS)
 
+        # Get configuration parameters
         params = self.configuration.parameters
 
         self.client_ID = params.get(KEY_CLIENT_ID)
@@ -60,7 +62,10 @@ class Component(ComponentBase):
         self.daily = params.get(DAILY)
         self.authentication = params.get(AUTHENTICATION)
 
+        # Get state file
         previous_state = self.get_state_file()
+
+        # Get api token
         if self.authentication:
             code = self._get_code()
             result = json.loads(code.text)
@@ -72,8 +77,10 @@ class Component(ComponentBase):
 
         logging.info("Token retrieved successfully.")
 
+        # Call endpoint
         self._hit_endpoint()
 
+        # Write to state file
         self.write_state_file({
             "#api_key": self.access_token['access_token'],
             '#refresh_token': self.access_token['refresh_token']})
@@ -123,12 +130,12 @@ class Component(ComponentBase):
                 TOKEN_URL,  data=data, verify=False, allow_redirects=False,
                 auth=(self.client_ID, self.client_secret))
             tokens = json.loads(access_token_response.text)
-            print(tokens)
             return tokens
         except requests.exceptions.HTTPError as err:
             raise SystemExit(err)
 
     def _hit_endpoint(self):
+        # Create header
         header = {
             'Authorization': f'Bearer {self.access_token["access_token"]}',
             'accept': 'application/vnd.allegro.public.v1+json',
@@ -136,6 +143,7 @@ class Component(ComponentBase):
             'Accept-Language': 'EN'
         }
 
+        # Method to create date range list from 2 dates
         def date_range_list(start_date, end_date):
             date_list = []
             curr_date = start_date
@@ -144,34 +152,52 @@ class Component(ComponentBase):
                 curr_date += timedelta(days=1)
             return date_list
 
+        # Method to call endpoint
         def get_data(date_list):
             results = {'billingEntries': []}
+
+            # Loop through dates
             for day in date_list[::-1]:
+                # Create start and end date in ISO format
                 start = datetime.combine(day, time(00, 00, 00, 000000)).isoformat()
                 end = datetime.combine(day, time(23, 59, 59, 999999)).isoformat()
+
+                # Set offset
                 offset = 0
+
+                # Hit endpoint until no more data is returned
                 while True:
+                    # Set endpoint url
                     url = f"""https://api.allegro.pl/billing/billing-entries?offset={offset}"""\
                         f"""&type.id=[A,REF,BC2,SUC,BRG,FSF,B]"""\
                         f"""&occurredAt.gte={start}Z&&occurredAt.lte={end}Z"""
 
+                    # Hit endpoint
                     get = requests.get(url, headers=header)
+
+                    # Get response json
                     data = get.json()
 
+                    # Load response into results
                     results['billingEntries'].extend(data['billingEntries'])
                     number_of_results = len(data['billingEntries'])
 
+                    # Check if there are more results
                     if number_of_results < 100:
                         break
 
+                    # Add 100 to offset to get additional results
                     if number_of_results == 100:
                         offset += 100
 
             return results
 
+        # Method to parse data
         def parse_biling_entries(data):
+            # Crate df from dictionary
             df = pd.DataFrame.from_dict(data['billingEntries'])
 
+            # Parse all nested dictionaries into columns
             df['typeID'] = df['type'].apply(lambda x: x.get('id'))
             df['typeName'] = df['type'].apply(lambda x: x.get('name'))
             df = df.drop(['type'], axis=1)
@@ -196,28 +222,35 @@ class Component(ComponentBase):
 
             return df
 
-        # if self.endpoint == 'Billing entries':
         logging.info('Getting dates.')
         if self.daily:
+            # Set start and stop date to yesterday
             start_date = stop_date = datetime.today().date() - timedelta(days=1)
-            date_list = date_range_list(start_date, stop_date)
         else:
+            # Set start to 1.1.2020 and stop to yesterday
             start_date = date(year=2020, month=1, day=1)
-            stop_date = datetime.today().date()
-            date_list = date_range_list(start_date, stop_date)
+            stop_date = datetime.today().date() - timedelta(days=1)
 
+        # Get date list
+        date_list = date_range_list(start_date, stop_date)
+
+        # Get results
         logging.info('Hitting endpoint for each date.')
         result = get_data(date_list)
 
+        # Parse results
         logging.info('Parsing data.')
         df = parse_biling_entries(result)
 
+        # Create table definition
         logging.info('Creating temporary table')
         table = self.create_out_table_definition('output.csv', incremental=True, primary_key=['id'])
 
+        # Write to table
         logging.info('Loading data into temporary table.')
         df.to_csv(table.full_path, index=False)
 
+        # Write to AWS
         logging.info('Loading data into storage.')
         self.write_manifest(table)
 
