@@ -3,7 +3,6 @@ Template Component main class.
 
 """
 import logging
-from multiprocessing.resource_sharer import stop
 import requests
 from datetime import datetime, timedelta, time
 import json
