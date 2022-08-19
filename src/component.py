@@ -17,7 +17,7 @@ from keboola.component.exceptions import UserException
 KEY_CLIENT_ID = '#client_id'
 KEY_CLIENT_SECRET = '#client_secret'
 ENDPOINTS = 'endpoint'
-DAILY = 'daily_load'
+DAYS = 'days'
 AUTHENTICATION = 'manual_authentication'
 
 CODE_URL = "https://allegro.pl/auth/oauth/device"
@@ -59,7 +59,7 @@ class Component(ComponentBase):
         self.client_ID = params.get(KEY_CLIENT_ID)
         self.client_secret = params.get(KEY_CLIENT_SECRET)
         self.endpoint = params.get(ENDPOINTS)
-        self.daily = params.get(DAILY)
+        self.days = params.get(DAYS)
         self.authentication = params.get(AUTHENTICATION)
 
         # Get state file
@@ -223,13 +223,11 @@ class Component(ComponentBase):
             return df
 
         logging.info('Getting dates.')
-        if self.daily:
-            # Set start and stop date to yesterday
-            start_date = stop_date = datetime.today().date() - timedelta(days=1)
-        else:
-            # Set start to 1.1.2020 and stop to yesterday
-            start_date = date(year=2020, month=1, day=1)
-            stop_date = datetime.today().date() - timedelta(days=1)
+
+        # Set start to 1.1.2020 and stop to yesterday
+        today = datetime.today().date()
+        start_date = today  - timedelta(days=1)
+        stop_date = datetime.today().date() - timedelta(days=self.days)
 
         # Get date list
         date_list = date_range_list(start_date, stop_date)

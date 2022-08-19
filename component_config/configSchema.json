@@ -4,7 +4,7 @@
   "required": [
     "#client_id",
     "#client_secret",
-    "daily_load",
+    "days",
     "manual_authentication",
     "endpoint"
   ],
@@ -12,27 +12,33 @@
     "#client_id": {
       "type": "string",
       "format": "password",
-      "title": "Allegro Client ID"
+      "title": "Allegro Client ID",
+      "propertyOrder": 1
     },
     "#client_secret": {
       "type": "string",
       "format": "password",
-      "title": "Allegro Client Secret"
+      "title": "Allegro Client Secret",
+      "propertyOrder": 2
     },
     "endpoint": {
       "title": "Endpoint",
       "type": "string",
       "enum": [
         "Billing entries"
-      ]
+      ],
+      "propertyOrder": 3
     },
-    "daily_load": {
-      "type": "boolean",
-      "title": "Daily load"
+    "days": {
+      "type": "integer",
+      "title": "Days",
+      "description": "How many days to load",
+      "propertyOrder": 4
     },
     "manual_authentication": {
       "type": "boolean",
-      "title": "Manual Authentication"
+      "title": "Manual Authentication",
+      "propertyOrder": 5
     }
   }
 }
