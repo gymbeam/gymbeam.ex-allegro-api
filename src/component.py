@@ -3,6 +3,7 @@ Template Component main class.
 
 """
 import logging
+from multiprocessing.resource_sharer import stop
 import requests
 from datetime import datetime, timedelta, time
 import json
@@ -158,6 +159,7 @@ class Component(ComponentBase):
 
             # Loop through dates
             for day in date_list[::-1]:
+                print(day)
                 # Create start and end date in ISO format
                 start = datetime.combine(day, time(00, 00, 00, 000000)).isoformat()
                 end = datetime.combine(day, time(23, 59, 59, 999999)).isoformat()
@@ -177,7 +179,7 @@ class Component(ComponentBase):
 
                     # Get response json
                     data = get.json()
-
+                    print(data)
                     # Load response into results
                     results['billingEntries'].extend(data['billingEntries'])
                     number_of_results = len(data['billingEntries'])
@@ -196,7 +198,7 @@ class Component(ComponentBase):
         def parse_biling_entries(data):
             # Crate df from dictionary
             df = pd.DataFrame.from_dict(data['billingEntries'])
-
+            print(df.head())
             # Parse all nested dictionaries into columns
             df['typeID'] = df['type'].apply(lambda x: x.get('id'))
             df['typeName'] = df['type'].apply(lambda x: x.get('name'))
@@ -226,11 +228,12 @@ class Component(ComponentBase):
 
         # Set start to 1.1.2020 and stop to yesterday
         today = datetime.today().date()
-        start_date = today - timedelta(days=1)
-        stop_date = datetime.today().date() - timedelta(days=self.days)
+        start_date = datetime.today().date() - timedelta(days=self.days)
+        stop_date = today - timedelta(days=1)
 
         # Get date list
         date_list = date_range_list(start_date, stop_date)
+        print(start_date, stop_date, date_list)
 
         # Get results
         logging.info('Hitting endpoint for each date.')
