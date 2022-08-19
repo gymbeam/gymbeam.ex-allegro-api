@@ -4,7 +4,7 @@ Template Component main class.
 """
 import logging
 import requests
-from datetime import datetime, timedelta, time, date
+from datetime import datetime, timedelta, time
 import json
 import time as time2
 import pandas as pd
@@ -226,7 +226,7 @@ class Component(ComponentBase):
 
         # Set start to 1.1.2020 and stop to yesterday
         today = datetime.today().date()
-        start_date = today  - timedelta(days=1)
+        start_date = today - timedelta(days=1)
         stop_date = datetime.today().date() - timedelta(days=self.days)
 
         # Get date list
